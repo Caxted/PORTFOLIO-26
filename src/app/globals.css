@@ -1,0 +1,163 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Barlow+Condensed:wght@400;500;600;700&display=swap');
+
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}
+
+:root {
+  --bg-cream:   #E9E7DC;
+  --bg-card:    #F0EFE6;
+  --text-ink:   #181715;
+  --accent-red: #D0351B;
+  --text-muted: #7A756D;
+  --border-line: rgba(24, 23, 21, 0.2);
+  
+  --ease-out:   cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  background: var(--bg-cream);
+  color: var(--accent-red);
+}
+
+/* GSAP optimized classes */
+.gsap-reveal, .gsap-wipe, .hero-load {
+  will-change: transform, opacity, clip-path;
+}
+
+body {
+  font-family: var(--font-sans), 'DM Mono', monospace;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+::selection {
+  background: var(--accent-red);
+  color: var(--bg-cream);
+}
+
+.f-serif { font-family: var(--font-serif), serif; }
+.f-cond { font-family: 'Barlow Condensed', sans-serif; }
+.f-mono { font-family: 'DM Mono', monospace; }
+
+/* Grain background overlay */
+.grain-overlay {
+  position: fixed;
+  inset: -50%;
+  width: 200%;
+  height: 200%;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.018'/%3E%3C/svg%3E");
+  opacity: 0.75;
+  pointer-events: none;
+  z-index: 9999;
+  animation: grain 7s steps(1) infinite;
+}
+
+@keyframes grain {
+  0%   { transform: translate(0,0)       }
+  14%  { transform: translate(-2%, -3%)  }
+  28%  { transform: translate(3%, 1%)    }
+  42%  { transform: translate(-1%, 4%)   }
+  56%  { transform: translate(4%, -2%)   }
+  70%  { transform: translate(-3%, 2%)   }
+  84%  { transform: translate(1%, -4%)   }
+  100% { transform: translate(0, 0)      }
+}
+
+/* Base structural utility classes for components */
+.section-padding {
+  padding: 100px 44px;
+}
+@media (max-width: 768px) {
+  .section-padding { padding: 80px 20px; }
+}
+
+/* GSAP generic targets */
+.gsap-reveal {
+  opacity: 0;
+  transform: translateY(30px);
+}
+.gsap-wipe {
+  clip-path: inset(0 100% 0 0);
+}
+.gsap-scale {
+  opacity: 0;
+  transform: scale(0.9);
+}
+
+/* Folder Layout Styles */
+.folder-container {
+  position: relative;
+  width: 80vw;
+  max-width: 1000px;
+  height: 60vh;
+  margin: 0 auto;
+  perspective: 2000px;
+}
+
+.folder-back, .folder-front {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #E6D0A9; /* Manila folder color */
+  border-radius: 4px 15px 4px 4px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  transform-origin: bottom center;
+  will-change: transform;
+}
+
+.folder-back::before {
+  content: '';
+  position: absolute;
+  top: -30px;
+  left: 5%;
+  width: 30%;
+  height: 30px;
+  background: #C4A787;
+  border-radius: 8px 8px 0 0;
+}
+
+.folder-back {
+  z-index: 1;
+  background: #C4A787;
+  background-image: repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(0,0,0,0.015) 2px, rgba(0,0,0,0.015) 4px);
+  box-shadow: inset 0 0 40px rgba(0,0,0,0.1), 0 20px 50px rgba(0,0,0,0.2);
+}
+
+.folder-front {
+  z-index: 20;
+  background: #D8BFA0;
+  background-image: repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(0,0,0,0.015) 2px, rgba(0,0,0,0.015) 4px);
+  box-shadow: inset 0 20px 50px rgba(0,0,0,0.05), 0 -10px 20px rgba(0,0,0,0.2);
+  border-top: 1px solid rgba(255,255,255,0.4);
+  transform-origin: bottom center;
+}
+
+.project-paper {
+  position: absolute;
+  bottom: 5%;
+  left: 5%;
+  width: 90%;
+  height: 90%;
+  background: #FAF9F6;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+  border: 1px solid rgba(0,0,0,0.05);
+  padding: 40px;
+  z-index: 10;
+  will-change: transform, opacity;
+}
