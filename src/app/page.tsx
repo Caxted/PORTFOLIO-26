@@ -132,7 +132,7 @@ export default function Home() {
       // Folder Spread Scroll Animation
       const workSection = document.querySelector('#work');
       const folderFront = document.querySelector('.folder-front');
-      const papers = gsap.utils.toArray('.project-paper');
+      const papers = gsap.utils.toArray('.project-paper') as any[];
       
       if (workSection && folderFront && papers.length > 0) {
         // Ensure papers stack in reverse DOM order so #01 is on top
