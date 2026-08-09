@@ -1,5 +1,65 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Barlow+Condensed:wght@400;500;600;700&display=swap');
 
+/* ----------------------------------------------------------------
+   TYPE SYSTEM
+
+   Display  — Druk Super Condensed if a licence is present, else Anton.
+              Druk is retail (Commercial Type) and cannot be redistributed,
+              so it is NOT bundled. To use a licensed copy, drop the woff2
+              into /public/fonts and uncomment the @font-face below; the
+              stack already lists it first, so it takes over automatically.
+
+   UI       — San Francisco UI Text on Apple platforms via `-apple-system`.
+              SF may not be served as a webfont off Apple platforms, so the
+              stack falls back to Inter, the closest freely-licensable
+              neo-grotesque. Both are loaded in layout.tsx.
+
+   Mono     — DM Mono, reserved for the technical readouts and metrics.
+   ---------------------------------------------------------------- */
+
+/*
+@font-face {
+  font-family: 'Druk Super Condensed';
+  src: url('/fonts/DrukSuperCondensed.woff2') format('woff2');
+  font-weight: 400 900;
+  font-style: normal;
+  font-display: swap;
+}
+*/
+
+/* ----------------------------------------------------------------
+   fixelPont — Klotter Supply (klotter.supply/fixelpont)
+   Used for the hero wordmark only; the rest of the display type stays
+   on --stack-display. Licensed under the CUTE license (Bye Bye Binary):
+   attribution required, commercial users asked to pay on its donation
+   scale. Full text ships at public/fonts/fixelPont-CUTE-license.pdf.
+   ---------------------------------------------------------------- */
+@font-face {
+  font-family: 'fixelPont';
+  src: url('/fonts/fixelPont-regular.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'fixelPont Rounded';
+  src: url('/fonts/fixelPont-rounded.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --stack-display: 'Druk Super Condensed', var(--font-display), 'Anton',
+                   'Barlow Condensed', Impact, sans-serif;
+  --stack-wordmark: 'fixelPont', var(--font-display), 'Anton', sans-serif;
+  --stack-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF UI Text',
+              var(--font-ui), 'Inter', 'Helvetica Neue', Arial, sans-serif;
+  --stack-mono: 'DM Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* Contact details. 'Aeonik' first so a licensed copy takes over if added. */
+  --stack-details: 'Aeonik', var(--font-details), 'Outfit', var(--stack-ui);
+}
+
 @keyframes spin {
   100% { transform: rotate(360deg); }
 }
@@ -7,11 +67,12 @@
 :root {
   --bg-cream:   #E9E7DC;
   --bg-card:    #F0EFE6;
+  --bg-marble:  #F2F8FC;
   --text-ink:   #181715;
   --accent-red: #D0351B;
   --text-muted: #7A756D;
   --border-line: rgba(24, 23, 21, 0.2);
-  
+
   --ease-out:   cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -23,17 +84,30 @@
 
 html {
   font-size: 16px;
-  background: var(--bg-cream);
+  /* The page runs on the hero's palette end to end now, so the root plate is
+     black. This is also what finally makes the fixed 3D flower canvas read —
+     against the old near-white marble it was washed out to nothing. */
+  background: #000;
   color: var(--accent-red);
 }
 
-/* GSAP optimized classes */
-.gsap-reveal, .gsap-wipe, .hero-load {
-  will-change: transform, opacity, clip-path;
-}
+/* NOT promoted with will-change any more.
+   This rule permanently promoted every reveal, wipe and hero element — dozens
+   of layers held on the GPU for the whole session. Chrome's own guidance is
+   that over-applying will-change exhausts compositor memory and causes
+   rendering artifacts, which is exactly what showed up: headings painting
+   twice with a vertical offset. It never appeared in screenshots because a
+   screenshot re-renders from the paint tree, while the fault was in the
+   presented GPU frame.
+   `clip-path` was the worst of it — it is not a compositable property, so
+   declaring it here bought nothing and forced a repaint of a promoted layer on
+   every scrub frame. GSAP already promotes its targets for the duration of a
+   tween and releases them afterwards, which is the behaviour we want. */
 
+/* Global default: everything that isn't display type or a technical readout
+   now sets in the SF/Inter UI stack. */
 body {
-  font-family: var(--font-sans), 'DM Mono', monospace;
+  font-family: var(--stack-ui);
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -44,14 +118,75 @@ a {
   color: inherit;
 }
 
+/* Touch ergonomics */
+a, button {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
 ::selection {
   background: var(--accent-red);
   color: var(--bg-cream);
 }
 
 .f-serif { font-family: var(--font-serif), serif; }
-.f-cond { font-family: 'Barlow Condensed', sans-serif; }
-.f-mono { font-family: 'DM Mono', monospace; }
+/* .f-cond is the site-wide display hook. Repointing it here swaps every piece
+   of oversized lettering — hero wordmark, section headings, project titles,
+   loader logo — to the display stack in one place. */
+.f-cond,
+.f-display {
+  font-family: var(--stack-display);
+  font-weight: 400;
+  text-transform: uppercase;
+}
+/* The wordmark face, reused for the big section headings so they read in the
+   same voice as the hero name. Kept separate from .f-cond, which still drives
+   the project titles and folder cover: fixelPont is a fixed-width pixel face
+   that sets far wider, so anything using it needs its own size scale. */
+.f-wordmark {
+  font-family: var(--stack-wordmark);
+  font-weight: 400;
+  text-transform: uppercase;
+}
+.f-mono { font-family: var(--stack-mono); }
+.f-ui { font-family: var(--stack-ui); }
+.f-details { font-family: var(--stack-details); }
+.f-italic { font-family: var(--font-italic), serif; font-style: italic; }
+
+/* Subheadings / section kickers, set in the UI stack */
+.t-subhead {
+  font-family: var(--stack-ui);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* ---- Tiny precise technical type ----
+   The counterweight to the oversized display lettering: everything that
+   isn't the wordmark is set small, monospaced and letter-spaced, so the
+   page reads as instrumentation around one huge object. */
+.t-micro {
+  font-family: var(--stack-mono);
+  font-size: 9px;
+  line-height: 1.5;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 400;
+}
+.t-micro-lg {
+  font-family: var(--stack-mono);
+  font-size: 10px;
+  line-height: 1.6;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+/* Readouts: tabular so digits don't jitter while the counters tick up */
+.t-metric {
+  font-family: var(--stack-mono);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
 
 /* Grain background overlay */
 .grain-overlay {
@@ -98,66 +233,1211 @@ a {
   transform: scale(0.9);
 }
 
-/* Folder Layout Styles */
-.folder-container {
-  position: relative;
-  width: 80vw;
-  max-width: 1000px;
-  height: 60vh;
-  margin: 0 auto;
-  perspective: 2000px;
-}
+/* ================================================================
+   HERO — the marble figure on black
+   The source PNG is opaque RGB on pure black (no alpha), so every
+   layer here sits on a matching black base: `contain` letterboxing
+   and the image's own edges then disappear seamlessly, and the
+   figure can be scaled per breakpoint without ever showing a seam.
+   ================================================================ */
 
-.folder-back, .folder-front {
+.hero-bg {
   position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: #E6D0A9; /* Manila folder color */
-  border-radius: 4px 15px 4px 4px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-  transform-origin: bottom center;
-  will-change: transform;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+  background: #000;
+  /* Deliberately NOT masked to transparent at the foot. An earlier pass faded
+     the whole plate out to meet the cream section; combined with the black
+     .hero-bg-fade below it produced a grey haze, and it dropped the cream HUD
+     text onto a light backdrop. The hero now stays black edge to edge and cuts
+     to cream — the same hard section break the Stack and Contact sections use. */
 }
 
-.folder-back::before {
+.hero-bg-base {
+  position: absolute;
+  inset: 0;
+  background: #000;
+}
+
+/* Foreground plane: the figure cutout plus all the grading, painted over the
+   wordmark. Transparent apart from the figure itself. */
+.hero-fg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* The figure plane. Bleeds past the section edges so parallax never exposes a
+   hard border. */
+.hero-figure {
+  position: absolute;
+  inset: -10% -6%;
+  /* Not will-change: transform — this is a viewport-sized image plane and a
+     static declaration kept it on the GPU for the page's whole life, even
+     once the hero was many viewports away. page.tsx now promotes it (via
+     promoteWhileActive) only while the hero scrub is actually running. */
+}
+
+.hero-figure-img {
+  object-fit: contain;
+  /* The figure sits low in the frame; anchoring low keeps it grounded */
+  object-position: center 72%;
+  /* Scaled down and pushed lower than the artwork's natural fit so the figure
+     only reaches the wordmark with its HEAD. At full height the torso was wide
+     enough to swallow two whole letters; now the head clips the type the way a
+     subject should, and the name stays readable. Transform lives on the <img>
+     because GSAP owns the transform on .hero-figure for the parallax. */
+  transform:
+    translateY(var(--hero-fig-shift, 11%))
+    scale(var(--hero-fig-scale, 0.84));
+  transform-origin: center 72%;
+  /* Pulls the marble off pure white so it reads as lit stone rather than a
+     cut-out, and gives the wordmark's cream face more to sit against where
+     the type crosses the brightest highlights. */
+  filter: brightness(0.88) contrast(1.1) saturate(0.92);
+}
+
+.hero-bg-vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 78% 68% at 50% 52%,
+      transparent 38%,
+      rgba(0, 0, 0, 0.5) 82%,
+      rgba(0, 0, 0, 0.82) 100%);
+}
+
+.hero-bg-scan {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.016) 0px,
+    rgba(255, 255, 255, 0.016) 1px,
+    transparent 1px,
+    transparent 5px
+  );
+  opacity: 0.4;
+}
+
+/* Grounds the figure and guarantees the cream HUD row at the bottom of the
+   hero always sits on solid black, whatever the image is doing behind it. */
+.hero-bg-fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 30vh;
+  background: linear-gradient(to bottom, transparent 0%, rgba(4, 4, 4, 0.75) 58%, #040404 100%);
+}
+
+/* --- Hero foreground, re-keyed for the dark plate --- */
+
+/* ---- The wordmark ----
+   Sits BETWEEN the two figure planes, so <HeroForeground>'s cutout paints over
+   it and the name reads as passing behind the statue's head. That occlusion is
+   also what guarantees legibility: the type is only ever visible against the
+   black plate, so it needs no blend mode and no knockout layer of its own
+   (an earlier pass used fixelPont's rounded style as a backdrop for exactly
+   that job — no longer necessary). */
+.hero-title-layer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  /* Tuned so the wordmark crosses the figure's head and shoulders */
+  top: var(--hero-title-y, 30%);
+  transform: translateY(-50%);
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.hero-title {
+  /* Driven per-frame from Lenis' scroll velocity — see the chromatic
+     aberration block in page.tsx. Falls back to a resting fringe. */
+  --ca: 2px;
+  font-family: var(--stack-wordmark);
+  display: flex;
+  align-items: flex-end;
+  color: var(--bg-cream);
+}
+
+.hero-char-mask {
+  display: inline-block;
+  overflow: hidden;
+  /* The display face overshoots its line box; pad the mask and pull it back
+     with a matching negative margin so the reveal still wipes from a hard edge
+     without shaving the glyphs. */
+  padding: 0.1em 0.02em 0.14em;
+  margin: -0.1em -0.02em -0.14em;
+}
+
+.hero-char {
+  display: inline-block;
+  position: relative;
+  /* Chromatic aberration: the red and cyan channels split away from the white
+     one, tracking --ca so the fringe opens up with scroll speed. */
+  text-shadow:
+    calc(var(--ca) * -1) 0 0 rgba(255, 42, 74, 0.72),
+    var(--ca) 0 0 rgba(0, 214, 255, 0.72);
+}
+
+.hero-on-dark { color: var(--bg-cream); }
+
+/* ================================================================
+   GLASSMORPHISM
+   One base class so every frosted surface shares the same recipe:
+   low-alpha white gradient, heavy backdrop blur, a bright top-left
+   hairline for the lit edge and a soft drop shadow underneath.
+   ================================================================ */
+.glass {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.028));
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-top-color: rgba(255, 255, 255, 0.26);
+  border-left-color: rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0 18px 46px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+}
+.glass-pill { border-radius: 999px; }
+
+/* Nav, as a floating frosted pill */
+.hero-nav-pill {
+  display: flex;
+  align-items: center;
+  gap: 34px;
+  padding: 12px 26px;
+}
+
+/* Solid counterpart to .glass for the primary action — the one opaque
+   element in the hero, so it reads as the single clickable thing. */
+.hero-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 15px 13px 24px;
+  border-radius: 999px;
+  background: var(--bg-cream);
+  color: var(--text-ink);
+  border: none;
+  cursor: pointer;
+  transition: transform 0.4s var(--ease-out), background 0.4s var(--ease-out);
+}
+.hero-cta:hover { background: #fff; transform: translateY(-2px); }
+.hero-cta-arrow {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent-red);
+  color: var(--bg-cream);
+  transition: transform 0.4s var(--ease-out);
+}
+.hero-cta:hover .hero-cta-arrow { transform: rotate(45deg); }
+
+.hero-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #38d39f;
+  box-shadow: 0 0 0 3px rgba(56, 211, 159, 0.16);
+  display: inline-block;
+}
+
+/* Metrics, re-housed in a glass card */
+.hero-metrics {
+  padding: 18px 26px;
+  gap: 34px;
+}
+.hero-metric-num {
+  font-size: 34px;
+  line-height: 1;
+  color: var(--accent-red);
+}
+.hero-metric-sep {
+  width: 1px;
+  align-self: stretch;
+  background: rgba(255, 255, 255, 0.14);
+}
+/* Tiny body copy beside the CTA, per the reference's stats/blurb pairing */
+.hero-blurb {
+  max-width: 300px;
+  color: rgba(233, 231, 220, 0.62);
+  font-size: 9px;
+  line-height: 1.9;
+  letter-spacing: 0.1em;
+  text-transform: none;
+}
+
+.hero-nav-links a {
+  position: relative;
+  opacity: 0.75;
+  transition: opacity 0.35s var(--ease-out);
+}
+.hero-nav-links a:hover { opacity: 1; }
+
+/* ---- Chromatic aberration ----
+   .chromatic marks an element the velocity ticker writes --ca onto;
+   .chromatic-text is what actually splits the channels. The wordmark carries
+   only .chromatic because its per-glyph children do the splitting. */
+.chromatic { --ca: 2px; }
+.chromatic-text {
+  text-shadow:
+    calc(var(--ca) * -1) 0 0 rgba(255, 42, 74, 0.5),
+    var(--ca) 0 0 rgba(0, 214, 255, 0.5);
+}
+
+/* Metrics now hold the bottom-right corner */
+.hero-bottom-right {
+  position: absolute;
+  right: 44px;
+  bottom: 40px;
+  z-index: 10;
+}
+
+/* Bottom-left cluster: action + blurb */
+.hero-bottom-left {
+  position: absolute;
+  left: 44px;
+  bottom: 40px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 22px;
+}
+.hero-bottom-row {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  flex-wrap: wrap;
+}
+
+/* Scroll cue */
+.hero-scroll-cue {
+  position: absolute;
+  bottom: 46px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: rgba(233, 231, 220, 0.6);
+}
+.hero-scroll-cue-line {
+  width: 46px;
+  height: 1px;
+  background: rgba(233, 231, 220, 0.3);
+  overflow: hidden;
+  position: relative;
+}
+.hero-scroll-cue-line::after {
   content: '';
   position: absolute;
-  top: -30px;
-  left: 5%;
-  width: 30%;
-  height: 30px;
-  background: #C4A787;
-  border-radius: 8px 8px 0 0;
+  inset: 0;
+  background: var(--accent-red);
+  transform-origin: left center;
+  animation: cue-sweep 2.4s var(--ease-out) infinite;
+}
+@keyframes cue-sweep {
+  0%   { transform: scaleX(0); transform-origin: left center; }
+  45%  { transform: scaleX(1); transform-origin: left center; }
+  55%  { transform: scaleX(1); transform-origin: right center; }
+  100% { transform: scaleX(0); transform-origin: right center; }
 }
 
-.folder-back {
-  z-index: 1;
-  background: #C4A787;
-  background-image: repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(0,0,0,0.015) 2px, rgba(0,0,0,0.015) 4px);
-  box-shadow: inset 0 0 40px rgba(0,0,0,0.1), 0 20px 50px rgba(0,0,0,0.2);
+/* Between phone and wide desktop the 16:9 source still letterboxes; nudge it up */
+@media (min-width: 769px) and (max-width: 1280px) {
+  .hero-figure-img { --hero-fig-scale: 0.98; --hero-fig-shift: 9%; }
 }
 
-.folder-front {
-  z-index: 20;
-  background: #D8BFA0;
-  background-image: repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(0,0,0,0.015) 2px, rgba(0,0,0,0.015) 4px);
-  box-shadow: inset 0 20px 50px rgba(0,0,0,0.05), 0 -10px 20px rgba(0,0,0,0.2);
-  border-top: 1px solid rgba(255,255,255,0.4);
-  transform-origin: bottom center;
+@media (prefers-reduced-motion: reduce) {
+  .hero-bg-scan { display: none; }
+  .hero-scroll-cue-line::after { animation: none; transform: scaleX(1); }
+  .grain-overlay { animation: none; }
 }
 
-.project-paper {
+/* ================================================================
+   WORK / PROJECTS — re-keyed to the hero's palette
+   The section used to be cream-on-light with a manila folder. It now
+   runs on the same three colours as the hero (black plate, cream ink,
+   accent red) plus the gold picked off the figure's laptop, so the
+   scroll from hero into work reads as one continuous space rather
+   than a hard flip from dark to light.
+
+   Because the section is transparent, the fixed 3D flower canvas —
+   which used to be washed out against the cream — now reads properly
+   against black.
+   ================================================================ */
+#work {
+  /* Card interior tokens, consumed by the inline styles in page.tsx */
+  --paper-ink: var(--bg-cream);
+  --paper-body: rgba(233, 231, 220, 0.82);
+  --paper-muted: rgba(233, 231, 220, 0.62);
+  --paper-faint: rgba(233, 231, 220, 0.38);
+  --paper-rule: rgba(233, 231, 220, 0.14);
+  --paper-grid: rgba(233, 231, 220, 0.05);
+  --paper-tag-line: rgba(208, 53, 27, 0.45);
+
+  --case-gold: #b8894a;
+  --case-shell: #14120f;
+
+  background: transparent;
+  color: var(--bg-cream);
+  border-top: 1px solid rgba(233, 231, 220, 0.12) !important;
+}
+
+#work .work-heading { color: var(--bg-cream); }
+
+/* Project cover flow — see the .coverflow* rules further down for the
+   component itself; --paper-*, --case-shell and --case-gold above are its
+   colour tokens too. */
+
+/* Contact / Footer — blurred video backdrop + info grid */
+/* ---- Contact backdrop: the reaching hands ----
+   One source image, drawn twice and clipped down the middle so each half can
+   be moved independently. The clip line falls in the black gap between the
+   two hands, so on a black plate the split is undetectable. GSAP scrubs them
+   together as the section scrolls (see the #contact timeline in page.tsx). */
+.contact-bg {
   position: absolute;
-  bottom: 5%;
-  left: 5%;
-  width: 90%;
-  height: 90%;
-  background: #FAF9F6;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-  border: 1px solid rgba(0,0,0,0.05);
-  padding: 40px;
-  z-index: 10;
-  will-change: transform, opacity;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.contact-hand {
+  position: absolute;
+  inset: 0;
+  /* Not will-change: transform — this is a full-viewport image and would sit
+     permanently promoted on the GPU for the page's whole lifetime, not just
+     while #contact is being scrubbed (see the root-rule note on will-change
+     above). GSAP promotes it for the duration of the active tween instead. */
+}
+/* Clip line sits on the image's own midpoint, which is the black gap between
+   the two hands — so the split stays invisible. */
+.contact-hand-l { clip-path: inset(0 50% 0 0); }
+.contact-hand-r { clip-path: inset(0 0 0 50%); }
+
+.contact-hand-img {
+  /* The arms are cut off by the source's own frame, so they must always be
+     scaled BY WIDTH — then their cut ends land exactly on the viewport edges
+     and are never visible. Which object-fit achieves that flips with the
+     viewport's aspect ratio:
+       box wider than the image's 3:2  -> `cover`   scales by width
+       box narrower than 3:2 (phones)  -> `contain` scales by width
+     Bleeding the container instead (an earlier attempt) could not work: with
+     `contain` in a wide box the image fits by HEIGHT, so it stayed narrower
+     than the screen however far the box was widened. */
+  object-fit: contain;
+  object-position: center 46%;
+  /* Small overlap so sub-pixel rounding can never reveal a sliver of cut edge */
+  transform: scale(1.06);
+  /* No filter and no scrim. The hands render at full strength — an earlier
+     pass dimmed them to keep the type dominant, but with the black rectangle
+     gone the type already reads and the marble should not be muddied. */
+}
+
+@media (min-aspect-ratio: 3 / 2) {
+  .contact-hand-img { object-fit: cover; }
+}
+
+.contact-bg-grain {
+  position: absolute;
+  inset: 0;
+  /* Above .contact-bg (0), below the section content (2) — the same place it
+     occupied as .contact-bg's last child, but outside the scrubbed transform
+     so it rasters once instead of per frame (see the note in page.tsx). */
+  z-index: 1;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.35'/%3E%3C/svg%3E");
+  opacity: 0.22;
+  mix-blend-mode: overlay;
+}
+
+
+.contact-utility-nav a {
+  transition: opacity 0.2s ease;
+}
+.contact-utility-nav a:hover {
+  opacity: 0.6;
+}
+
+.contact-info-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-weight: 700;
+  color: var(--accent-red);
+}
+
+.contact-info-link {
+  font-family: var(--stack-details);
+  font-weight: 400;
+  letter-spacing: -0.005em;
+  display: block;
+  width: fit-content;
+  font-size: 20px;
+  color: var(--bg-cream);
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+.contact-info-link:hover {
+  opacity: 0.6;
+}
+
+.contact-baseline-text {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: rgba(237,232,223,0.4);
+  font-weight: 700;
+}
+
+/* ================================================================
+   SKILL WHEEL — radial ability-wheel treatment for the Stack section
+   ================================================================ */
+.skillwheel-wrap {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+}
+
+.skillwheel-stage {
+  /* Full-bleed break-out: this box lives inside #stack's padded,
+     centered content flow, but needs to span the true viewport edges
+     the way the contact section's video does (there it's a direct
+     child of the section; here it's nested two levels deeper inside
+     .skillwheel-wrap, so the same inset:0 trick alone isn't enough —
+     it would only fill this box's own constrained width). */
+  position: relative;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  overflow: hidden;
+  padding: clamp(40px, 6vw, 80px) clamp(20px, 6vw, 80px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  /* Transparent, not #000: the wheel now shares this stage with the
+     section's own David figure (moved in via the `heading` prop) instead of
+     sitting below it as a separate opaque panel, so the figure needs to show
+     through here. The vignette below still darkens the edges enough to keep
+     the wheel and text legible over it. */
+  border-top: 1px solid rgba(233, 231, 220, 0.1);
+  border-bottom: 1px solid rgba(233, 231, 220, 0.1);
+}
+.skillwheel-stage-grain {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.4'/%3E%3C/svg%3E");
+  opacity: 0.28;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
+.skillwheel-stage-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 42%, rgba(0, 0, 0, 0.72) 100%);
+}
+
+.skillwheel-layout {
+  --wheel-size: clamp(280px, 30vw, 440px);
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  min-height: var(--wheel-size);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(40px, 6vw, 100px);
+}
+
+.skillwheel-root {
+  position: relative;
+  flex: 0 0 auto;
+  width: var(--wheel-size);
+  aspect-ratio: 1 / 1;
+  /* Nudged up off the row's centred baseline. */
+  margin-top: -48px;
+}
+
+/* The title moved in from page.tsx (see the `heading` prop) so the section
+   reads as one scene: wheel on the left, title at the right extreme. */
+.skillwheel-heading-slot {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.skillwheel-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.skillwheel-ring-outer {
+  fill: none;
+  stroke: rgba(237,232,223,0.14);
+  stroke-width: 0.4;
+}
+
+.skillwheel-ring-inner {
+  fill: none;
+  stroke: rgba(237,232,223,0.08);
+  stroke-width: 0.3;
+  stroke-dasharray: 0.8 1.6;
+}
+
+.skillwheel-ring-rotate {
+  animation: spin 90s linear infinite;
+}
+
+.skillwheel-tick {
+  stroke: rgba(237,232,223,0.18);
+  stroke-width: 0.3;
+}
+.skillwheel-tick-long {
+  stroke: rgba(237,232,223,0.32);
+  stroke-width: 0.45;
+}
+
+.skillwheel-spoke {
+  stroke: rgba(237,232,223,0.12);
+  stroke-width: 0.3;
+  opacity: 0.7;
+}
+
+.skillwheel-hub-ring {
+  fill: none;
+  stroke: var(--accent-red);
+  stroke-width: 0.5;
+  opacity: 0.8;
+}
+.skillwheel-hub-mark {
+  fill: none;
+  stroke: var(--bg-cream);
+  stroke-width: 0.45;
+  opacity: 0.85;
+}
+.skillwheel-hub-dot {
+  fill: var(--accent-red);
+}
+
+.skillwheel-node-pos {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+}
+
+/* ---- Floating windows ----
+   Each skill is its own small self-sufficient panel — icon, category and
+   name always visible, description revealed on hover/focus — rather than a
+   shared detail readout elsewhere on the page. The float animation lives on
+   this element, not on .skillwheel-node-pos, so it never fights the parent's
+   static centering transform. */
+.skillwheel-window {
+  position: relative;
+  box-sizing: border-box;
+  width: clamp(100px, 11vmin, 136px);
+  padding: 8px 10px 9px;
+  border-radius: 8px;
+  background: rgba(20, 18, 15, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(237, 232, 223, 0.16);
+  border-top-color: rgba(237, 232, 223, 0.32);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.5);
+  color: var(--bg-cream);
+  cursor: default;
+  transition: transform 0.35s var(--ease-out), border-color 0.35s ease, box-shadow 0.35s ease;
+  animation: skillWindowFloat 5s ease-in-out infinite;
+  -webkit-tap-highlight-color: transparent;
+}
+.skillwheel-window:hover,
+.skillwheel-window:focus-visible {
+  transform: scale(1.08);
+  border-color: rgba(208, 53, 27, 0.5);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(208, 53, 27, 0.3), 0 0 26px rgba(208, 53, 27, 0.25);
+  animation-play-state: paused;
+  z-index: 5;
+  outline: none;
+}
+
+.skillwheel-window-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 7px;
+}
+.skillwheel-window-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent-red);
+  flex: none;
+}
+.skillwheel-window-cat {
+  font-family: var(--stack-mono);
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: rgba(237, 232, 223, 0.55);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.skillwheel-window-body {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.skillwheel-window-icon {
+  display: flex;
+  flex: none;
+  opacity: 0.9;
+}
+.skillwheel-window-icon svg { width: 16px; height: 16px; }
+.skillwheel-window-name {
+  font-family: var(--stack-ui);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--bg-cream);
+}
+
+.skillwheel-window-detail {
+  font-family: var(--stack-mono);
+  font-size: 9px;
+  line-height: 1.5;
+  color: rgba(237, 232, 223, 0.55);
+  margin-top: 0;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.35s var(--ease-out), opacity 0.3s ease, margin-top 0.35s var(--ease-out);
+}
+.skillwheel-window:hover .skillwheel-window-detail,
+.skillwheel-window:focus-visible .skillwheel-window-detail {
+  max-height: 100px;
+  opacity: 1;
+  margin-top: 6px;
+}
+
+@keyframes skillWindowFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-7px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skillwheel-ring-rotate { animation: none; }
+  .skillwheel-window { animation: none; }
+}
+
+/* ================================================================
+   MOBILE RESPONSIVE OVERRIDES
+   These are not a shrunk-down desktop layout — mobile gets its own
+   nav treatment, its own project list (no scroll-jacking), and its
+   own type scale tuned for narrow, tall viewports.
+   Uses !important to override inline styles where necessary.
+   ================================================================ */
+
+@media (max-width: 768px) {
+
+  /* ---------- Hero ---------- */
+  .hero-header {
+    top: max(20px, env(safe-area-inset-top)) !important;
+    left: 20px !important;
+    right: 20px !important;
+    justify-content: center !important;
+  }
+  /* Hug the labels rather than stretching edge to edge — a full-width bar
+     stops reading as a pill. */
+  .hero-nav-links {
+    width: auto !important;
+    max-width: calc(100vw - 40px) !important;
+    justify-content: center !important;
+    flex-wrap: nowrap !important;
+    font-size: 9px !important;
+  }
+  .hero-nav-links a {
+    padding: 8px 4px !important;
+    min-height: 36px !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+  /* The display face carries its own condensed proportions, so no scaleY
+     correction is needed here. Just scale down and tighten the resting fringe. */
+  /* fixelPont sets far wider than the condensed display face, so the narrow
+     breakpoint needs a much smaller step or the wordmark reaches both edges. */
+  .hero-title {
+    font-size: clamp(28px, 15.6vw, 300px) !important;
+    --ca: 1.5px;
+  }
+  /* Desktop puts the metrics bottom-right and the action bottom-left. There
+     is no room for that side by side on a phone — they collided — so the two
+     clusters stack instead, metrics above the action. */
+  .hero-bottom-right {
+    left: 20px !important;
+    right: 20px !important;
+    bottom: 104px !important;
+  }
+  .hero-bottom-left {
+    left: 20px !important;
+    right: 20px !important;
+    bottom: 24px !important;
+    gap: 14px !important;
+  }
+  .hero-metrics {
+    gap: 12px !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    padding: 14px 16px !important;
+    box-sizing: border-box !important;
+  }
+  .hero-metric-num { font-size: 26px !important; }
+  .hero-bottom-row { gap: 14px !important; }
+  .hero-blurb { display: none !important; }
+  .hero-scroll-cue { display: none !important; }
+  .hero-nav-pill { gap: 16px !important; padding: 10px 16px !important; }
+  /* Narrow viewports letterbox a 16:9 source hard, so push the figure larger.
+     The empty black margins are all that gets cropped. */
+  .hero-figure-img { --hero-fig-scale: 1.5; --hero-fig-shift: 2%; object-position: center 58% !important; }
+  /* Narrow viewports put the figure lower in frame, so the wordmark drops to
+     meet its head rather than floating in empty black above it. */
+  .hero-title-layer { top: 33% !important; }
+  .loader-corner { font-size: 8px !important; }
+  .loader-bar-bg { width: min(300px, 78vw) !important; }
+
+  /* ---------- Work section header grid → single column ---------- */
+  .work-section-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0 !important;
+    margin-bottom: 32px !important;
+  }
+  .work-heading  { font-size: clamp(36px, 13vw, 200px) !important; }
+  .stack-heading { font-size: clamp(36px, 11vw, 200px) !important; text-align: center !important; }
+
+  /* ---------- Cover flow ---------- */
+  .coverflow {
+    grid-template-columns: 1fr !important;
+    gap: 28px !important;
+    min-height: auto !important;
+  }
+  .coverflow-text { max-width: none !important; }
+  .coverflow-rail { height: 340px !important; }
+  .coverflow-card { width: 210px !important; height: 92px !important; padding: 14px 16px !important; }
+  .coverflow-card-title { font-size: 19px !important; }
+
+  /* ---------- Skill wheel ---------- */
+  /* The desktop layout puts the wheel on the left and the title at the
+     right extreme — on a narrow screen there's no room for that side-by-
+     side split, so both go back to normal flow and stack in a centered
+     column instead, title first. */
+  .skillwheel-stage { padding: 32px 16px !important; }
+  .skillwheel-layout {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 32px !important;
+    min-height: 0 !important;
+  }
+  .skillwheel-heading-slot {
+    order: -1;
+    justify-content: center !important;
+    width: 100%;
+  }
+  .skillwheel-root {
+    width: min(78vw, 340px) !important;
+  }
+  .skillwheel-window { width: clamp(84px, 24vw, 108px) !important; }
+  .skillwheel-window-detail { display: none; }
+
+  /* ---------- Contact / Footer ---------- */
+  .contact-utility-nav { gap: 16px !important; font-size: 9px !important; }
+  .contact-brand-row   { font-size: 9px !important; letter-spacing: 0.15em !important; }
+  .contact-kicker      { font-size: 14px !important; }
+  .contact-giant-heading { font-size: clamp(48px, 17vw, 200px) !important; }
+  .contact-hand-img   { object-position: center 44% !important; }
+    .contact-info-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 28px 20px !important;
+    padding-top: 24px !important;
+    margin-top: 36px !important;
+  }
+  .contact-info-link {
+  font-family: var(--stack-details);
+  font-weight: 400;
+  letter-spacing: -0.005em; font-size: 17px !important; }
+  .footer-bottom {
+    flex-direction: column !important;
+    gap: 8px !important;
+    align-items: flex-start !important;
+    padding-bottom: env(safe-area-inset-bottom) !important;
+  }
+  .footer-bottom-right { flex-direction: column !important; gap: 4px !important; }
+
+  /* ---------- About modal → single column, scrollable ---------- */
+  .about-modal-container {
+    padding: 55px 5vw calc(20px + env(safe-area-inset-bottom)) !important;
+    overflow-y: auto !important;
+    align-items: flex-start !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+  }
+  .about-modal-inner {
+    grid-template-columns: 1fr !important;
+    gap: 24px !important;
+    height: auto !important;
+    align-items: start !important;
+  }
+  .about-modal-h2     { font-size: 17vw !important; }
+  .about-modal-quote  { font-size: clamp(19px, 5.5vw, 28px) !important; }
+  .about-details-cols { gap: 32px !important; flex-wrap: wrap !important; }
+}
+
+/* Tablet / small-laptop skill wheel: the wheel-left / title-right-extreme
+   split needs real horizontal room, or the title's right-aligned lines wrap
+   awkwardly narrow. Below this width, fall back to the same stacked layout
+   mobile uses. */
+@media (max-width: 1400px) and (min-width: 769px) {
+  .skillwheel-layout {
+    flex-direction: column;
+    align-items: center;
+    gap: 40px;
+    min-height: 0;
+  }
+  .skillwheel-heading-slot {
+    order: -1;
+    justify-content: center;
+    width: 100%;
+  }
+  .stack-heading { text-align: center !important; }
+}
+
+/* Extra-small phones (iPhone SE / older Android, ~320-390px) */
+@media (max-width: 400px) {
+  .hero-nav-links       { font-size: 8px !important; letter-spacing: 0.1em !important; }
+  .hero-nav-pill        { gap: 12px !important; padding: 9px 13px !important; }
+  .hero-metrics         { gap: 8px !important; padding: 12px 12px !important; }
+  .hero-metric-num      { font-size: 22px !important; }
+  .hero-cta             { padding: 11px 12px 11px 18px !important; }
+  .loader-corner-sub    { display: none !important; }
+  .contact-info-grid    { grid-template-columns: 1fr !important; gap: 20px !important; }
+  .about-modal-h2       { font-size: 15vw !important; }
+  .coverflow-card       { width: 180px !important; }
+}
+
+/* ----------------------------------------------------------------
+   Project cover flow — vertical, self-contained (no ScrollTrigger: the
+   rail captures its own wheel/touch/keyboard input instead of hijacking
+   page scroll, see ProjectCoverFlow.tsx). Left column is the focused
+   project's copy; right column is the receding card stack.
+   ---------------------------------------------------------------- */
+.coverflow {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+  gap: clamp(40px, 6vw, 100px);
+  align-items: center;
+  min-height: 560px;
+}
+
+.coverflow-text {
+  max-width: 46ch;
+  animation: coverflowTextIn 0.45s var(--ease-out);
+}
+.coverflow-text-index {
+  color: var(--paper-muted);
+  margin-bottom: 18px;
+}
+.coverflow-text-tag {
+  color: var(--accent-red);
+  margin-bottom: 14px;
+}
+.coverflow-text-title {
+  font-size: clamp(40px, 5vw, 76px);
+  line-height: 0.92;
+  color: var(--paper-ink);
+  margin: 0 0 20px 0;
+}
+.coverflow-text-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--paper-body);
+  margin: 0 0 24px 0;
+}
+.coverflow-text-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+.coverflow-feature-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--paper-tag-line);
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 9px;
+  color: var(--accent-red);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+}
+.coverflow-feature-tag::before {
+  content: '';
+  width: 4px;
+  height: 4px;
+  background: var(--accent-red);
+}
+.coverflow-text-meta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  border-top: 1px solid var(--paper-rule);
+  padding-top: 18px;
+}
+.coverflow-meta-label {
+  display: block;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--accent-red);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.coverflow-meta-value {
+  display: block;
+  font-size: 10px;
+  line-height: 1.6;
+  color: var(--paper-ink);
+  font-weight: 500;
+  white-space: pre-wrap;
+}
+
+@keyframes coverflowTextIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.coverflow-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.coverflow-rail {
+  position: relative;
+  width: 100%;
+  height: 560px;
+  perspective: 1400px;
+  perspective-origin: 50% 50%;
+  outline: none;
+  cursor: grab;
+  touch-action: none;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, black 18%, black 82%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, black 18%, black 82%, transparent);
+}
+.coverflow-rail:active { cursor: grabbing; }
+/* Visible only for keyboard focus, not mouse/touch interaction */
+.coverflow-rail:focus-visible { -webkit-mask-image: none; mask-image: none; }
+.coverflow-rail:focus-visible .coverflow-card.is-active {
+  box-shadow: 0 0 0 2px var(--accent-red), 0 24px 60px rgba(0,0,0,0.6);
+}
+
+.coverflow-track {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+.coverflow-card {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 260px;
+  height: 108px;
+  padding: 16px 20px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(233, 231, 220, 0.1);
+  border-top-color: rgba(184, 137, 74, 0.35);
+  background: linear-gradient(155deg, var(--case-shell), #0a0a09);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+  color: var(--paper-ink);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.5s var(--ease-out), opacity 0.5s var(--ease-out), box-shadow 0.35s ease, border-color 0.35s ease;
+}
+.coverflow-card.is-active {
+  border-color: rgba(208, 53, 27, 0.5);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(208,53,27,0.25);
+}
+.coverflow-card-num {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  font-size: 22px;
+  color: var(--accent-red);
+  opacity: 0.5;
+}
+.coverflow-card-icon {
+  display: flex;
+  opacity: 0.85;
+}
+.coverflow-card-icon svg { width: 20px; height: 20px; }
+.coverflow-card-title {
+  font-size: 22px;
+  line-height: 1;
+  margin: 0;
+}
+.coverflow-card-tags {
+  color: var(--paper-muted);
+}
+
+.coverflow-nav {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.coverflow-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--paper-rule);
+  background: rgba(20,18,15,0.4);
+  color: var(--paper-ink);
+  cursor: pointer;
+  transition: border-color 0.3s ease, color 0.3s ease, transform 0.3s ease;
+}
+.coverflow-nav-btn:hover { border-color: var(--accent-red); color: var(--accent-red); transform: scale(1.08); }
+.coverflow-dots {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+}
+.coverflow-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  background: var(--paper-rule);
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.3s ease;
+}
+.coverflow-dot.is-active {
+  background: var(--accent-red);
+  transform: scale(1.5);
+}
+
+/* ================================================================
+   SECTION FIGURES — Work and Skills
+   Cut-out marble subjects behind the section content, matted by
+   scripts/build-hero-matte.mjs the same way the hero and contact
+   backdrops are. Because they carry alpha they sit on each section's
+   own plate: no photo rectangle, no seam, no competing grade.
+   All motion is scrubbed from page.tsx.
+   ================================================================ */
+.section-figure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  /* Explicitly one viewport tall, NOT inset:0 — the backdrop belongs to the
+     section's opening screen, not its full height. */
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.section-figure-plate {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 68%;
+  /* Not will-change: transform — this plate carries a ~2MB alpha-matted
+     image and was permanently promoted for the page's whole lifetime (see
+     the root-rule note on will-change) even when its section — #work or
+     #stack — was many viewports away. GSAP promotes it for the duration of
+     the scrub that actually animates it and releases it after. */
+}
+.section-figure-right  .section-figure-plate { right: -6%; }
+.section-figure-left   .section-figure-plate { left: -6%; }
+/* Centred with margin-left, not translateX: GSAP owns this element's transform
+   for the entrance animations, so a centring transform here would be overwritten. */
+.section-figure-center .section-figure-plate { left: 50%; margin-left: -34%; }
+
+.section-figure-img {
+  object-fit: contain;
+  object-position: center center;
+  /* Full strength by request — no opacity hold-back and no grade. An earlier
+     pass dimmed these to 0.5 and desaturated them to keep the type dominant;
+     the marble now renders exactly as shot. */
+}
+
+/* A single specular pass across the marble as the section arrives */
+.section-figure-sheen {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg,
+    transparent 38%,
+    rgba(255, 255, 255, 0.09) 48%,
+    rgba(255, 245, 220, 0.16) 51%,
+    transparent 62%);
+  opacity: 0;
+  /* Not will-change — one-shot, GSAP-promoted only for its own ~2s tween. */
+}
+
+/* Skills sits on the ink plate, so its figure needs a touch more presence */
+.stack-figure .section-figure-plate { width: 60%; }
+/* Above .skillwheel-layout's z-index: 3 (not the base .section-figure: 0),
+   so the figure paints over the heading the same way the hero's figure
+   paints over the wordmark — the title now passes behind David's face
+   instead of sitting in front of it. Spatially the wheel lives on the
+   opposite side of the stage, so raising the whole figure doesn't cover it. */
+.stack-figure { z-index: 4; }
+
+@media (max-width: 768px) {
+  .section-figure-plate { width: 108%; right: -22% !important; left: auto !important; margin-left: 0 !important; }
+  .section-figure-sheen { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .section-figure-sheen { display: none; }
 }
