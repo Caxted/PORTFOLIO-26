@@ -8,19 +8,19 @@ import HeroBackground from '@/components/HeroBackground';
 import HeroForeground from '@/components/HeroForeground';
 import SectionFigure from '@/components/SectionFigure';
 import SkillWheel from '@/components/SkillWheel';
-import ProjectCoverFlow from '@/components/ProjectCoverFlow';
+import ProjectWheel, { type WheelController } from '@/components/ProjectWheel';
 import { useLenisRef } from '@/components/SmoothScroll';
 import { Code, Activity, Leaf, LayoutDashboard, Wifi, FileWarning, Map, ArrowUpRight, Smartphone, Database, Building2, BrainCircuit, ShieldHalf } from 'lucide-react';
 
 gsap.registerPlugin(ScrollTrigger);
 
 const projects = [
-  { n: '01', t: 'CowTrack', subtitle: 'AI-POWERED LIVESTOCK HEALTH MONITORING PLATFORM', tags: 'CV • FLUTTER', year: '2026', role: 'Full-Stack Developer\n& Machine Learning Engineer', techStack: 'Flutter, Dart\nTensorFlow Lite, YOLOv8\nFirebase, Hive (Local DB)\nREST APIs', d: 'CowTrack is an end-to-end livestock health monitoring platform that uses YOLO-based computer vision to detect diseases in cows in real time. The system works offline-first and syncs data when connected, enabling reliable use in rural environments.', features: ['YOLO Computer Vision', 'Real-time Detection', 'Cross-platform', 'Offline Sync'], icon: <Activity size={36} color="var(--text-ink)" strokeWidth={1.5} /> },
-  { n: '02', t: 'Leaflet', subtitle: 'GAMIFIED BOTANICAL CARE COMPANION', tags: 'FLUTTER • UX', year: '2023', role: 'Mobile Developer\n& UX Designer', techStack: 'Flutter, Dart\nRiverpod, Animations\nLocal Storage', d: 'A highly gamified botanical care companion app. Designed rich micro-interactions and immersive animations to reward users for real-world plant maintenance, increasing 30-day user retention by turning chores into a digital pet experience.', features: ['Micro-interactions', 'Gamification', 'Local Notifications', 'State Management'], icon: <Leaf size={36} color="var(--text-ink)" strokeWidth={1.5} /> },
-  { n: '03', t: 'LIFE-OS', subtitle: 'PERSONAL COMMAND CENTER DASHBOARD', tags: 'PRODUCTIVITY', year: '2023', role: 'UI/UX Designer\n& Frontend Developer', techStack: 'React, Next.js\nTailwind CSS\nFramer Motion', d: 'A comprehensive personal command center. Architected a dynamic dashboard integrating habit tracking, calendar synchronization, and modular widgets using React, wrapped in a brutalist yet highly functional aesthetic.', features: ['Modular Widgets', 'Calendar Sync', 'Habit Tracking', 'Brutalist UI'], icon: <LayoutDashboard size={36} color="var(--text-ink)" strokeWidth={1.5} /> },
-  { n: '04', t: 'Fake WiFi', subtitle: 'PROACTIVE NETWORK DEFENSE TOOL', tags: 'ML • SECURITY', year: '2026', role: 'Security Researcher\n& ML Engineer', techStack: 'Python, Scikit-learn\nWireshark, Scapy\nPandas, Bash', d: 'A proactive network defense tool. Developed an ML-driven anomaly detection engine capable of fingerprinting rogue access points and Evil Twin attacks in real-time, instantly alerting users to potential traffic interception.', features: ['Anomaly Detection', 'Packet Sniffing', 'Real-time Alerts', 'Rogue AP Fingerprinting'], icon: <Wifi size={36} color="var(--text-ink)" strokeWidth={1.5} /> },
-  { n: '05', t: 'Fake Loan', subtitle: 'PREDATORY LENDING SCAM DETECTOR', tags: 'AI FRAUD', year: '2026', role: 'AI Engineer\n& Data Scientist', techStack: 'Python, NLP\nRandom Forest\nFlask API', d: 'A financial security mechanism. Trained and deployed an NLP and Random Forest ensemble model to analyze loan offer linguistics and metadata, successfully identifying predatory lending scams with 94% accuracy.', features: ['NLP Linguistics', 'Ensemble Modeling', 'Fraud Detection', 'API Integration'], icon: <FileWarning size={36} color="var(--text-ink)" strokeWidth={1.5} /> },
-  { n: '06', t: 'Fault Line', subtitle: 'GEOLOGICAL RISK ANALYSIS PLATFORM', tags: 'NEXT.JS', year: '2023', role: 'Full-Stack Developer\n& System Architect', techStack: 'Next.js, WebGL\nSupabase, PostGIS\nMulti-Agent LLMs', d: 'A robust geological analysis dashboard. Built a high-performance Next.js full-stack application rendering complex topographical datasets. Integrated a multi-agent system which helps to take decisions on high-risk things based on geological factors.', features: ['WebGL Rendering', 'Multi-Agent System', 'Topographical Data', 'Risk Assessment'], icon: <Map size={36} color="var(--text-ink)" strokeWidth={1.5} /> }
+  { n: '01', t: 'CowTrack', subtitle: 'AI-POWERED LIVESTOCK HEALTH MONITORING PLATFORM', tags: 'CV • FLUTTER', year: '2026', role: 'Full-Stack Developer\n& Machine Learning Engineer', techStack: 'Flutter, Dart\nTensorFlow Lite, YOLOv8\nFirebase, Hive (Local DB)\nREST APIs', d: 'CowTrack is an end-to-end livestock health monitoring platform that uses YOLO-based computer vision to detect diseases in cows in real time. The system works offline-first and syncs data when connected, enabling reliable use in rural environments.', features: ['YOLO Computer Vision', 'Real-time Detection', 'Cross-platform', 'Offline Sync'], icon: <Activity size={36} strokeWidth={1.5} /> },
+  { n: '02', t: 'Leaflet', subtitle: 'GAMIFIED BOTANICAL CARE COMPANION', tags: 'FLUTTER • UX', year: '2023', role: 'Mobile Developer\n& UX Designer', techStack: 'Flutter, Dart\nRiverpod, Animations\nLocal Storage', d: 'A highly gamified botanical care companion app. Designed rich micro-interactions and immersive animations to reward users for real-world plant maintenance, increasing 30-day user retention by turning chores into a digital pet experience.', features: ['Micro-interactions', 'Gamification', 'Local Notifications', 'State Management'], icon: <Leaf size={36} strokeWidth={1.5} /> },
+  { n: '03', t: 'LIFE-OS', subtitle: 'PERSONAL COMMAND CENTER DASHBOARD', tags: 'PRODUCTIVITY', year: '2023', role: 'UI/UX Designer\n& Frontend Developer', techStack: 'React, Next.js\nTailwind CSS\nFramer Motion', d: 'A comprehensive personal command center. Architected a dynamic dashboard integrating habit tracking, calendar synchronization, and modular widgets using React, wrapped in a brutalist yet highly functional aesthetic.', features: ['Modular Widgets', 'Calendar Sync', 'Habit Tracking', 'Brutalist UI'], icon: <LayoutDashboard size={36} strokeWidth={1.5} /> },
+  { n: '04', t: 'Fake WiFi', subtitle: 'PROACTIVE NETWORK DEFENSE TOOL', tags: 'ML • SECURITY', year: '2026', role: 'Security Researcher\n& ML Engineer', techStack: 'Python, Scikit-learn\nWireshark, Scapy\nPandas, Bash', d: 'A proactive network defense tool. Developed an ML-driven anomaly detection engine capable of fingerprinting rogue access points and Evil Twin attacks in real-time, instantly alerting users to potential traffic interception.', features: ['Anomaly Detection', 'Packet Sniffing', 'Real-time Alerts', 'Rogue AP Fingerprinting'], icon: <Wifi size={36} strokeWidth={1.5} /> },
+  { n: '05', t: 'Fake Loan', subtitle: 'PREDATORY LENDING SCAM DETECTOR', tags: 'AI FRAUD', year: '2026', role: 'AI Engineer\n& Data Scientist', techStack: 'Python, NLP\nRandom Forest\nFlask API', d: 'A financial security mechanism. Trained and deployed an NLP and Random Forest ensemble model to analyze loan offer linguistics and metadata, successfully identifying predatory lending scams with 94% accuracy.', features: ['NLP Linguistics', 'Ensemble Modeling', 'Fraud Detection', 'API Integration'], icon: <FileWarning size={36} strokeWidth={1.5} /> },
+  { n: '06', t: 'Fault Line', subtitle: 'GEOLOGICAL RISK ANALYSIS PLATFORM', tags: 'NEXT.JS', year: '2023', role: 'Full-Stack Developer\n& System Architect', techStack: 'Next.js, WebGL\nSupabase, PostGIS\nMulti-Agent LLMs', d: 'A robust geological analysis dashboard. Built a high-performance Next.js full-stack application rendering complex topographical datasets. Integrated a multi-agent system which helps to take decisions on high-risk things based on geological factors.', features: ['WebGL Rendering', 'Multi-Agent System', 'Topographical Data', 'Risk Assessment'], icon: <Map size={36} strokeWidth={1.5} /> }
 ];
 
 // Split once at module scope so the per-character wordmark markup is stable
@@ -55,6 +55,12 @@ export default function Home() {
   // Lenis mounts a tick after us; the GSAP effects below read it through this
   // ref inside the ticker, so nothing here needs to re-render when it arrives.
   const lenisRef = useLenisRef();
+
+  // Bridge to the project wheel. The pinned scrub writes the rim angle through
+  // wheelRef every frame; seekToProjectRef goes the other way, letting a click
+  // on a card scroll the page to that card's slot in the pinned range.
+  const wheelRef = useRef<WheelController | null>(null);
+  const seekToProjectRef = useRef<((index: number) => void) | null>(null);
 
   useEffect(() => {
     const updateClock = () => {
@@ -315,32 +321,143 @@ export default function Home() {
         );
       });
 
-      // Work section handoff: the title + sword-bearer are the opening beat,
-      // then the title fades as the cover flow takes over — one continuous
-      // scene instead of two unrelated screens the user scrolls between.
-      // Plain scrub, no pin: both tweens live on ONE timeline driven by a
-      // single trigger, so the fade-out and fade-in are always in lockstep
-      // (two independently-triggered scrubs on adjacent elements drifted out
-      // of sync — the cover flow arrived while the title was still on screen,
-      // reading as clutter instead of a handoff). The cover flow's own fade-in
-      // starts at local time 0.4 so the second half of the scroll is a
-      // cross-dissolve rather than a hard cut.
-      if (document.querySelector('.work-section-grid') && document.querySelector('.coverflow')) {
-        const workHandoffTl = gsap.timeline({
-          scrollTrigger: {
-            trigger: '.work-section-grid',
-            start: 'top 15%',
-            end: 'bottom top',
-            scrub: true,
-            onToggle: promoteWhileActive([
-              ['.work-section-grid', 'transform, opacity'],
-              ['.coverflow', 'transform, opacity'],
-            ]),
-          },
+      // --- Work, beat 1: the title arrives as two masked lines ---
+      // Replaces the left-to-right clip wipe this heading used to share with
+      // the contact section. At this size a wipe exposes half-letters for most
+      // of its travel; whole lines lifting out of their own baseline mask read
+      // as type being set instead. The kicker leads so the eye has somewhere
+      // to be before the display line lands.
+      if (document.querySelector('.work-heading-inner')) {
+        const titleIn = { trigger: '.work-stage', start: 'top 72%', once: true };
+
+        gsap.fromTo('.work-kicker',
+          { opacity: 0, y: 16 },
+          { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out', scrollTrigger: titleIn }
+        );
+        gsap.fromTo('.work-heading-inner',
+          { yPercent: 118, rotate: 2.5, opacity: 0 },
+          {
+            yPercent: 0, rotate: 0, opacity: 1,
+            duration: 1.15, ease: 'power4.out', stagger: 0.13,
+            scrollTrigger: titleIn,
+            // Left behind, the inline transform would fight the pinned
+            // timeline's own hold on this block a moment later.
+            clearProps: 'transform',
+          }
+        );
+      }
+
+      // --- Work, beats 2 and 3: the pinned handoff ---
+      // The stage pins and one scrubbed timeline runs the rest of the section:
+      // the title lifts away, the sword-bearer slides left and gives up a
+      // little scale to clear the right half, and the project wheel rolls in
+      // and then spins through the six projects.
+      //
+      // Still one timeline on one trigger, for the reason the old two-scrub
+      // handoff was replaced: independently-triggered scrubs on adjacent
+      // elements drift, and the wheel arriving while the title was still up
+      // read as clutter rather than a handoff.
+      //
+      // The rim angle is driven through a plain proxy object rather than a DOM
+      // tween — the wheel's controller turns that into one custom-property
+      // write per frame and only touches React when the focused card changes.
+      if (document.querySelector('.work-stage') && document.querySelector('.projwheel')) {
+        const steps = Math.max(1, projects.length - 1);
+        const HANDOFF = 1;
+        const SPIN = 3.4;
+        // A beat of still pin after the last project reaches focus. The rim is
+        // endless to look at, but the scroll through it is not: without this
+        // the sixth project arrives on the exact frame the pin lets go, so it
+        // is gone before it has been read. The wheel completes, rests, and
+        // only then does the page move on.
+        const HOLD = 0.5;
+
+        const mm = gsap.matchMedia();
+        teardowns.push(() => mm.revert());
+
+        mm.add('(min-width: 769px)', () => {
+          const spin = { p: 0 };
+
+          // One viewport for the handoff, then ~0.62 of one per project step.
+          // Deliberately not the twelve-viewport pin the folder section it
+          // replaced used — that length is what made this part of the page
+          // feel like it had taken the scrollbar hostage.
+          const workTl = gsap.timeline({
+            scrollTrigger: {
+              trigger: '.work-stage',
+              start: 'top top',
+              end: () => `+=${Math.round(window.innerHeight * (1 + 0.62 * steps + 0.3))}`,
+              pin: true,
+              anticipatePin: 1,
+              scrub: 0.5,
+              invalidateOnRefresh: true,
+              onToggle: promoteWhileActive([
+                ['.work-title-block', 'transform, opacity'],
+                ['.work-figure .section-figure-plate', 'transform'],
+                ['.projwheel-scene', 'opacity'],
+                ['.projwheel', 'transform'],
+                ['.projwheel-hub', 'transform'],
+              ]),
+            },
+          });
+
+          workTl
+            .to('.work-title-block',
+              { opacity: 0, yPercent: -26, ease: 'none', duration: HANDOFF * 0.85 }, 0)
+            // fromTo, not to(): the figure entrance scrub further down owns
+            // this same plate right up to 'top top', and a to() would latch
+            // its start values when the timeline is built and fight it.
+            // immediateRender:false keeps this off the plate until the pin.
+            .fromTo('.work-figure .section-figure-plate',
+              { xPercent: 0, yPercent: 0, scale: 1 },
+              {
+                xPercent: -27, yPercent: 0, scale: 0.8, ease: 'none',
+                duration: HANDOFF * 1.15, immediateRender: false,
+              }, 0.1)
+            // Opacity on the scene (rim + copy together), travel on the rim
+            // alone — the copy is anchored to the left and must not slide in
+            // from the right with the wheel.
+            .fromTo('.projwheel-scene',
+              { opacity: 0 },
+              { opacity: 1, ease: 'none', duration: HANDOFF * 0.9, immediateRender: false },
+              HANDOFF * 0.55)
+            .fromTo('.projwheel',
+              { xPercent: 30, rotate: 16 },
+              {
+                xPercent: 0, rotate: 0, ease: 'none',
+                duration: HANDOFF * 0.9, immediateRender: false,
+              }, HANDOFF * 0.55)
+            .fromTo(spin, { p: 0 }, {
+              p: 1, ease: 'none', duration: SPIN, immediateRender: false,
+              onUpdate: () => wheelRef.current?.setProgress(spin.p),
+            }, HANDOFF)
+            // Nothing animates through the hold; it exists to give the timeline
+            // (and so the pin) a tail past the end of the spin.
+            .to({}, { duration: HOLD }, HANDOFF + SPIN);
+
+          // Clicking a card scrolls to that card's slot in the pinned range
+          // rather than turning the rim behind scroll's back, so the angle and
+          // the scroll position can never disagree.
+          seekToProjectRef.current = (i) => {
+            const st = workTl.scrollTrigger;
+            if (!st) return;
+            const local = Math.min(0.995, (HANDOFF + (i / steps) * SPIN) / workTl.duration());
+            const y = st.start + (st.end - st.start) * local;
+            const lenis = lenisRef.current;
+            if (lenis) lenis.scrollTo(y, { duration: 0.9 });
+            else window.scrollTo({ top: y, behavior: 'smooth' });
+          };
+
+          return () => { seekToProjectRef.current = null; };
         });
-        workHandoffTl
-          .fromTo('.work-section-grid', { opacity: 1, y: 0 }, { opacity: 0, y: -60, ease: 'none', duration: 1 }, 0)
-          .fromTo('.coverflow', { opacity: 0, y: 40 }, { opacity: 1, y: 0, ease: 'none', duration: 0.6 }, 0.4);
+
+        // Narrow screens don't pin (the stage unwinds to auto height in
+        // globals.css), so there is no scroll range to seek within — taps
+        // turn the rim directly instead.
+        mm.add('(max-width: 768px)', () => {
+          seekToProjectRef.current = (i) => wheelRef.current?.setProgress(i / steps);
+          return () => { seekToProjectRef.current = null; };
+        });
       }
 
       // Massive Typography Scale Effect for Stack Section
@@ -740,29 +857,38 @@ export default function Home() {
       </section>
 
       {/* WORK SECTION */}
-      <section id="work" className="section-padding" style={{ position: 'relative', borderTop: '1px solid var(--border-line)' }}>
-        <SectionFigure src="/images/projbg-fg.png" side="center" className="work-figure" />
-        <div style={{ position: 'absolute', top: 0, right: '5%', width: '1px', height: '100%', background: 'var(--border-line)' }} />
-        <div style={{ position: 'absolute', top: '100px', right: '5%', width: '10vw', height: '2px', background: 'var(--accent-red)' }} />
-        
-        <div className="work-section-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '80px', alignItems: 'start', marginBottom: '24px', position: 'relative', zIndex: 1 }}>
-          <div>
-            <div className="gsap-wipe" style={{ fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--accent-red)', marginBottom: '20px', borderBottom: '1px solid var(--border-line)', paddingBottom: '10px', display: 'inline-block' }}>
-              Featured Projects 2026
-            </div>
-            <h2 className="gsap-wipe velocity-skew chromatic chromatic-text f-cond work-heading" style={{ fontSize: 'clamp(80px, 11vw, 200px)', lineHeight: 0.92, letterSpacing: '-0.02em', color: 'var(--paper-ink)', textTransform: 'uppercase', margin: '20px 0 40px 0' }}>
-              <span style={{ color: 'var(--accent-red)' }}>Fusion</span> & <br/>Resonance
+      <section id="work" style={{ position: 'relative', borderTop: '1px solid var(--border-line)' }}>
+        {/* One pinned 100vh stage carries the whole section — see the pinned
+            timeline in the effect above for the beat order. */}
+        <div className="work-stage">
+          <SectionFigure src="/images/projbg-fg.png" side="center" className="work-figure" />
+          <div style={{ position: 'absolute', top: 0, right: '5%', width: '1px', height: '100%', background: 'var(--border-line)' }} />
+          <div className="work-stage-scrim" />
+
+          <div className="work-title-block">
+            <div className="work-kicker t-micro">Featured Projects 2026</div>
+            <h2 className="chromatic chromatic-text f-cond work-heading">
+              <span className="work-heading-line">
+                <span className="work-heading-inner">
+                  <span style={{ color: 'var(--accent-red)' }}>Fusion</span> &amp;
+                </span>
+              </span>
+              <span className="work-heading-line">
+                <span className="work-heading-inner">Resonance</span>
+              </span>
             </h2>
           </div>
-          {/* Removed text block, empty div to keep grid layout intact */}
-          <div></div>
-        </div>
 
-        <ProjectCoverFlow projects={projects} />
+          <ProjectWheel
+            projects={projects}
+            controllerRef={wheelRef}
+            onSelect={(i) => seekToProjectRef.current?.(i)}
+          />
+        </div>
       </section>
 
       {/* ABOUT / STACK SECTION */}
-      <section id="stack" className="section-padding" style={{ position: 'relative', overflow: 'hidden', background: 'var(--text-ink)', color: 'var(--bg-cream)', minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+      <section id="stack" className="section-padding" style={{ position: 'relative', overflow: 'hidden', color: 'var(--bg-cream)', minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
         <SectionFigure src="/images/skillsbg-fg.png" side="right" className="stack-figure" />
 
         <SkillWheel
