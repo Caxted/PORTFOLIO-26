@@ -234,6 +234,30 @@ a, button {
 }
 
 /* ================================================================
+   LOADING SCREEN
+   A black plate with five stylised "S" renders (public/images/s1-5)
+   that dissolve one into the next in the dead centre, settle on the
+   last, then the plate lifts to the hero. The whole sequence — the
+   cross-dissolves and the hand-off — is one GSAP timeline in page.tsx
+   (search "Loading screen"), so it always plays through and ends on a
+   known frame rather than being cut mid-cycle. The images just start
+   hidden and stacked; GSAP owns their opacity/scale.
+   ================================================================ */
+.loader-s-stage {
+  position: relative;
+  width: clamp(180px, 42vmin, 380px);
+  aspect-ratio: 1 / 1;
+}
+.loader-s-img {
+  opacity: 0;
+  /* GSAP promotes these for the duration of the dissolves and clears it once
+     the plate is gone — no static will-change (see the root-rule note). */
+}
+@media (max-width: 768px) {
+  .loader-s-stage { width: 62vw; }
+}
+
+/* ================================================================
    HERO — the marble figure on black
    The source PNG is opaque RGB on pure black (no alpha), so every
    layer here sits on a matching black base: `contain` letterboxing
@@ -598,7 +622,13 @@ a, button {
 .contact-bg {
   position: absolute;
   inset: 0;
-  z-index: 0;
+  /* Above ALL of the section's content (which tops out at z-index 2), so the
+     reaching hands cross in FRONT of every line — heading, kicker, info grid,
+     baseline. The PNG is alpha-matted, so the text shows through the gaps and
+     is cut by the arms, the same occlusion the statue gives the hero wordmark.
+     pointer-events: none (inherited by the hands) keeps the links behind it
+     clickable. */
+  z-index: 5;
   overflow: hidden;
   pointer-events: none;
 }
@@ -642,10 +672,11 @@ a, button {
 .contact-bg-grain {
   position: absolute;
   inset: 0;
-  /* Above .contact-bg (0), below the section content (2) — the same place it
-     occupied as .contact-bg's last child, but outside the scrubbed transform
-     so it rasters once instead of per frame (see the note in page.tsx). */
-  z-index: 1;
+  /* Shares .contact-bg's z-index (5) and follows it in the DOM, so it paints
+     just above the hands — the same place it occupied as .contact-bg's last
+     child, but outside the scrubbed transform so it rasters once instead of
+     per frame (see page.tsx). */
+  z-index: 5;
   pointer-events: none;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.35'/%3E%3C/svg%3E");
   opacity: 0.22;
@@ -1015,8 +1046,6 @@ a, button {
   /* Narrow viewports put the figure lower in frame, so the wordmark drops to
      meet its head rather than floating in empty black above it. */
   .hero-title-layer { top: 33% !important; }
-  .loader-corner { font-size: 8px !important; }
-  .loader-bar-bg { width: min(300px, 78vw) !important; }
 
   .work-heading  { font-size: clamp(36px, 13vw, 200px) !important; }
   .stack-heading { font-size: clamp(36px, 11vw, 200px) !important; text-align: center !important; }
@@ -1125,7 +1154,6 @@ a, button {
 
   /* ---------- Contact / Footer ---------- */
   .contact-utility-nav { gap: 16px !important; font-size: 9px !important; }
-  .contact-brand-row   { font-size: 9px !important; letter-spacing: 0.15em !important; }
   .contact-kicker      { font-size: 14px !important; }
   .contact-giant-heading { font-size: clamp(48px, 17vw, 200px) !important; }
   .contact-hand-img   { object-position: center 44% !important; }
@@ -1192,7 +1220,6 @@ a, button {
   .hero-metrics         { gap: 8px !important; padding: 12px 12px !important; }
   .hero-metric-num      { font-size: 22px !important; }
   .hero-cta             { padding: 11px 12px 11px 18px !important; }
-  .loader-corner-sub    { display: none !important; }
   .contact-info-grid    { grid-template-columns: 1fr !important; gap: 20px !important; }
   .about-modal-h2       { font-size: 15vw !important; }
   .projwheel            { height: 450px !important; --rim-r: 205px; --card-w: 98px; }

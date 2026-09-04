@@ -27,6 +27,11 @@ const projects = [
 // across renders — each span is a mask the load reveal animates through.
 const HERO_WORDMARK = 'SANGEETH'.split('');
 
+// Loading screen: five stylised "S" renders that hard-cut through the dead
+// centre on black. The cycle itself is pure CSS (.loader-s-img) so it runs the
+// instant the page paints; the load timeline only lifts the plate afterwards.
+const LOADER_ESSES = ['/images/s1.png', '/images/s2.png', '/images/s3.png', '/images/s4.png', '/images/s5.png'];
+
 // Chromatic aberration fringe, in px: the width at rest and the extra spread
 // scroll velocity can add on top.
 const CA_REST = 2;
@@ -205,26 +210,73 @@ export default function Home() {
       };
 
       // Initial Load Animation Sequence
-      const tl = gsap.timeline();
+      const tl = gsap.timeline({ paused: true });
 
-      // 1. Loading Screen Animation
-      tl.to('.loader-flower-path', { strokeDashoffset: 0, duration: 2, ease: 'power3.inOut', delay: 0.2 })
-        .to('.loader-logo', { y: 0, duration: 1, ease: 'power4.out' }, '-=1.2')
-        .to('.loader-sub', { y: 0, duration: 0.8, ease: 'power3.out' }, '-=0.8')
-        .to('.loader-bar-fill', { width: '100%', duration: 2, ease: 'power2.inOut' }, 0)
-        .to('.loader-content', { opacity: 0, duration: 0.5, ease: 'power2.out' }, '+=0.2')
-        .to('.loader-curtain-left', { xPercent: -100, duration: 1.2, ease: 'power4.inOut' }, '+=0.1')
-        .to('.loader-curtain-right', { xPercent: 100, duration: 1.2, ease: 'power4.inOut' }, '<')
-        .set('.loader-screen', { display: 'none' })
-        
-      // 2. Hero load animations (starts as curtains open).
+      // 1. Loading screen. Five stylised S's cross-dissolve through the dead
+      //    centre; the last one settles, then the black plate lifts. One
+      //    timeline start to finish, so it always plays through and ends on a
+      //    known frame rather than being cut mid-cycle.
+      //
+      //    Everything here animates ONLY opacity and transform (scale) — both
+      //    run on the compositor. An earlier pass animated `filter: blur()` for
+      //    a focus-pull look; that repaints a full-size image every frame and
+      //    was the source of the loader stutter, so it's gone.
+      const loaderEsses = gsap.utils.toArray<HTMLImageElement>('.loader-s-img');
+      // Randomise the run order every load — which S leads and the order they
+      // cross-dissolve through. The frames are stacked and only opacity decides
+      // what shows, so DOM order stays fixed (no SSR/hydration mismatch); just
+      // the animation walks them in a shuffled sequence.
+      const seq = gsap.utils.shuffle(loaderEsses.slice());
+      const lastEss = seq[seq.length - 1];
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      gsap.set(loaderEsses, { opacity: 0, scale: 1, willChange: 'opacity, transform' });
+
+      if (reduceMotion) {
+        // No motion — just hold the final S, then hand off.
+        tl.set(lastEss, { opacity: 1 })
+          .to({}, { duration: 0.5 })
+          .to('.loader-screen', { opacity: 0, duration: 0.4, ease: 'power2.inOut' })
+          .set('.loader-screen', { display: 'none' })
+          .set(loaderEsses, { willChange: 'auto' });
+      } else {
+        const FADE = 0.5;  // cross-dissolve length
+        const HOLD = 0.16; // beat between one S fully arriving and the next starting
+
+        // Intro: the leading S punches in from a larger scale and decelerates
+        // into place — a focus pull done purely on transform/opacity.
+        tl.fromTo(seq[0],
+          { opacity: 0, scale: 1.85 },
+          { opacity: 1, scale: 1, duration: 0.85, ease: 'power3.out' },
+          0);
+
+        // A touch longer on the first S once it lands, then cross-dissolve the
+        // rest one into the next (opacity only — no scale, so nothing repaints).
+        let at = 0.85 + 0.32;
+        for (let i = 1; i < seq.length; i++) {
+          tl.to(seq[i - 1], { opacity: 0, duration: FADE, ease: 'sine.inOut' }, at);
+          tl.to(seq[i], { opacity: 1, duration: FADE, ease: 'sine.inOut' }, at);
+          at += FADE + HOLD;
+        }
+
+        // Longer settle on the last S (the payoff frame), then it pushes back
+        // and fades as the plate lifts — bookending the intro. The hero plate
+        // behind is already black, so there's no seam.
+        at += 0.32;
+        tl.to(lastEss, { opacity: 0, scale: 1.3, duration: 0.6, ease: 'power2.in' }, at)
+          .to('.loader-screen', { opacity: 0, duration: 0.55, ease: 'power2.inOut' }, at + 0.08)
+          .set('.loader-screen', { display: 'none' })
+          .set(loaderEsses, { willChange: 'auto' });
+      }
+
+      // 2. Hero load animations (start as the plate lifts).
       //    fromTo, not to: nothing here is pre-hidden in CSS, so a plain
       //    `to({opacity:1})` animated from 1 to 1 and showed nothing.
       //    The wordmark is excluded — it gets the per-glyph reveal below.
-        .fromTo('.hero-load:not(.hero-parallax-title)',
-          { y: 26, opacity: 0 },
-          { y: 0, opacity: 1, duration: 1, stagger: 0.09, ease: 'power3.out' },
-          '-=0.8');
+      tl.fromTo('.hero-load:not(.hero-parallax-title)',
+        { y: 26, opacity: 0 },
+        { y: 0, opacity: 1, duration: 1, stagger: 0.09, ease: 'power3.out' },
+        '-=0.4');
 
       // The wordmark is the payoff of the whole load sequence, so it gets its
       // own treatment: each glyph rises out of its own mask, fastest first.
@@ -253,8 +305,16 @@ export default function Home() {
         }, '-=1.2');
       });
 
-      // Simple blink effect for the HUD
-      gsap.to('.loader-blink', { opacity: 0, duration: 0.5, repeat: -1, yoyo: true });
+      // Hold the whole load timeline until the five S frames have actually
+      // decoded — otherwise the first cross-dissolves stutter while the browser
+      // decodes a full-size image mid-tween. Capped so a slow/failed decode
+      // can never strand the loader.
+      let loadStarted = false;
+      const startLoad = () => { if (!loadStarted) { loadStarted = true; tl.play(); } };
+      Promise.all(
+        loaderEsses.map((img) => (img.decode ? img.decode().catch(() => {}) : Promise.resolve()))
+      ).then(startLoad);
+      gsap.delayedCall(1.2, startLoad);
 
       // 1. Dynamic continuous scrub reveal for all items
       gsap.utils.toArray<HTMLElement>('.gsap-reveal').forEach((el) => {
@@ -717,62 +777,27 @@ export default function Home() {
   return (
     <main ref={containerRef} style={{ position: 'relative', width: '100vw', overflowX: 'hidden' }}>
       
-      {/* PROFESSIONAL LOADING SCREEN - VAULT CURTAIN DESIGN */}
-      <div className="loader-screen" style={{ position: 'fixed', inset: 0, zIndex: 99999, pointerEvents: 'none', display: 'flex' }}>
-        
-        {/* Solid Cream Curtains (Hides 3D Flower) */}
-        <div className="loader-curtain-left" style={{ width: '50vw', height: '100vh', background: 'var(--bg-marble)', borderRight: '1px solid rgba(0,0,0,0.05)' }} />
-        <div className="loader-curtain-right" style={{ width: '50vw', height: '100vh', background: 'var(--bg-marble)', borderLeft: '1px solid rgba(0,0,0,0.05)' }} />
-
-        {/* HUD Content Wrapper */}
-        <div className="loader-content" style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-          
-          {/* Brutalist Corner Elements */}
-          <div className="loader-corner loader-corner-tl" style={{ position: 'absolute', top: '40px', left: '40px', fontSize: '10px', color: 'var(--text-ink)', textTransform: 'uppercase', letterSpacing: '0.2em', fontWeight: 600 }}>
-            [ SYS.01 ]
-          </div>
-          <div className="loader-corner loader-corner-tr" style={{ position: 'absolute', top: '40px', right: '40px', fontSize: '10px', color: 'var(--text-ink)', textTransform: 'uppercase', letterSpacing: '0.2em', textAlign: 'right', fontWeight: 600 }}>
-            <span style={{ color: 'var(--accent-red)' }}>REC</span> <span className="loader-blink" style={{ color: 'var(--accent-red)' }}>●</span><br/>
-            <span className="loader-corner-sub" style={{ opacity: 0.5, display: 'block', marginTop: '8px' }}>COORD: 9.9312° N, 76.2673° E</span>
-          </div>
-          <div className="loader-corner loader-corner-bl" style={{ position: 'absolute', bottom: '40px', left: '40px', fontSize: '10px', color: 'var(--text-ink)', textTransform: 'uppercase', letterSpacing: '0.2em', fontWeight: 600 }}>
-            PORTFOLIO_V2
-          </div>
-          <div className="loader-corner loader-corner-br loader-corner-sub" style={{ position: 'absolute', bottom: '40px', right: '40px', fontSize: '10px', color: 'var(--text-ink)', textTransform: 'uppercase', letterSpacing: '0.2em', textAlign: 'right', opacity: 0.5 }}>
-            DESIGN ORIGINATES FROM LIFE.
-          </div>
-
-          {/* SVG Animated Geometric Flower */}
-          <div className="loader-flower-wrap" style={{ position: 'relative', width: '160px', height: '160px', marginBottom: '60px' }}>
-            <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
-              <g fill="none" stroke="var(--accent-red)" strokeWidth="0.5">
-                {[0, 45, 90, 135].map((angle, i) => (
-                  <ellipse key={`e1-${i}`} className="loader-flower-path" strokeDasharray="300" strokeDashoffset="300" cx="50" cy="50" rx="40" ry="10" transform={`rotate(${angle} 50 50)`} />
-                ))}
-                {[22.5, 67.5, 112.5, 157.5].map((angle, i) => (
-                  <ellipse key={`e2-${i}`} className="loader-flower-path" strokeDasharray="300" strokeDashoffset="300" cx="50" cy="50" rx="25" ry="15" transform={`rotate(${angle} 50 50)`} />
-                ))}
-                <circle className="loader-flower-path" strokeDasharray="300" strokeDashoffset="300" cx="50" cy="50" r="5" />
-              </g>
-            </svg>
-          </div>
-
-          {/* Main Typography */}
-          <div style={{ overflow: 'hidden', position: 'relative' }}>
-            <h1 className="loader-logo f-display chromatic chromatic-text" style={{ fontSize: 'clamp(38px, 6vw, 96px)', color: 'var(--text-ink)', letterSpacing: '-0.01em', margin: 0, transform: 'translateY(100%)' }}>
-              SANGEETH CS
-            </h1>
-          </div>
-
-          <div style={{ overflow: 'hidden', marginTop: '10px' }}>
-            <div className="loader-sub" style={{ color: '#005B41', fontSize: '12px', letterSpacing: '0.4em', textTransform: 'uppercase', transform: 'translateY(100%)', fontWeight: 600 }}>
-              Neural Architecture & Design
-            </div>
-          </div>
-          
-          <div className="loader-bar-bg" style={{ position: 'absolute', bottom: '25vh', width: '300px', height: '2px', background: 'rgba(0,0,0,0.1)' }}>
-            <div className="loader-bar-fill" style={{ width: '0%', height: '100%', background: 'var(--accent-red)' }} />
-          </div>
+      {/* LOADING SCREEN — five stylised S's cross-dissolving through the dead
+          centre on black, settling on the last before the plate lifts. The
+          whole sequence is the GSAP timeline above (search "Loading screen"). */}
+      <div className="loader-screen" style={{ position: 'fixed', inset: 0, zIndex: 99999, pointerEvents: 'none', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {/* position: relative also inline — next/image's fill check reads the
+            computed style on mount, before the stylesheet always applies. */}
+        <div className="loader-s-stage" style={{ position: 'relative' }}>
+          {LOADER_ESSES.map((src) => (
+            <Image
+              key={src}
+              src={src}
+              alt=""
+              fill
+              sizes="(max-width: 768px) 62vw, 380px"
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
+              className="loader-s-img"
+              style={{ objectFit: 'contain' }}
+            />
+          ))}
         </div>
       </div>
 
@@ -923,9 +948,9 @@ export default function Home() {
             step — procedural noise is expensive to raster, and measured across
             a scroll of this section it accounted for over half of all raster
             work on the page (5015 -> 2356 raster tasks with it removed).
-            Out here the layer never transforms, so it rasters once. z-index 1
-            keeps it above .contact-bg (0) and below the content (2), which is
-            exactly where it sat as .contact-bg's last child. */}
+            Out here the layer never transforms, so it rasters once. It shares
+            .contact-bg's z-index (5) and follows it in the DOM, so it paints
+            just above the hands, which sit in front of all the text. */}
         <div className="contact-bg-grain" aria-hidden="true" />
 
         {/* Utility nav, echoes the hero header */}
@@ -935,12 +960,10 @@ export default function Home() {
           <a href="#contact" style={{ borderBottom: '2px solid var(--accent-red)', paddingBottom: '4px' }}>Contact</a>
         </nav>
 
-        {/* Brand row */}
-        <div className="gsap-reveal contact-brand-row" style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.2em', fontWeight: 700, color: 'var(--bg-cream)', marginTop: 'clamp(30px, 6vh, 70px)' }}>
-          <span>Sangeeth</span>
-        </div>
-
-        {/* Giant heading */}
+        {/* Kicker + giant heading. Like every other line in this section it
+            sits BEHIND the reaching hands (z-index below .contact-bg's 5):
+            contactbg-fg.png is alpha-matted, so the arms cross the text the
+            way the statue crosses the hero wordmark. */}
         <div style={{ position: 'relative', zIndex: 2, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <div className="gsap-wipe f-italic contact-kicker" style={{ fontSize: 'clamp(18px, 2.4vw, 28px)', color: 'var(--accent-red)', marginBottom: '4px' }}>
             Got a project worth building?
